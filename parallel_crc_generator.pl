@@ -84,7 +84,7 @@ sub crc_calc_h2_matrix {
 }
 
 sub print_header {
-    print FILE "This file was automatically generated\n\n";
+    print FILE "//This file was automatically generated\n\n";
     print FILE "module parallel_crc (\n";
     print FILE "\tinput logic clk, reset_n,\n";
     if ($FF_EN==1) {
