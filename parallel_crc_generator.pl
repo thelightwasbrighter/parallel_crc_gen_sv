@@ -3,6 +3,7 @@
 $DATA_WIDTH = 4;
 $CRC_WIDTH = 5;
 $GENERATOR = 5;
+$FF_EN = 1;
 
 $DATA_WIDTH_DEC = $DATA_WIDTH - 1;
 $CRC_WIDTH_DEC = $CRC_WIDTH - 1;
@@ -86,6 +87,9 @@ sub print_header {
     print FILE "This file was automatically generated\n\n";
     print FILE "module parallel_crc (\n";
     print FILE "\tinput logic clk, reset_n,\n";
+    if ($FF_EN==1) {
+	print FILE "\tinput logic crc_en,\n";
+    }
     print FILE "\tinput logic [$DATA_WIDTH_DEC:0] data_in,\n";
     print FILE "\toutput logic [$CRC_WIDTH_DEC:0] crc_out\n";
     print FILE "\t);\n\n";
@@ -100,11 +104,19 @@ sub print_header {
     print FILE "\tend\n\n";
     print FILE "\t//next state logic\n";
     print FILE "\talways_comb begin\n";
+    if ($FF_EN==1) {
+	print FILE "\t\t//defaults\n";
+	print FILE "\t\t//lfsr_next = lfsr_reg;\n\n";
+	print FILE "\t\tif (crc_en==1'b1) begin\n";
+    }
 }
 
 sub print_logic {
     for (my $i = 0; $i<$CRC_WIDTH; $i += 1) { 
 	$first_done = 0;
+	if ($FF_EN==1) {
+	    print FILE "\t";
+	}
 	print FILE "\t\tlfsr_next[$i] =";
 	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) { 
 	    if ($h2_mat_out[$i]->[$j]==1) {
@@ -131,6 +143,9 @@ sub print_logic {
 }
 
 sub print_footer {
+    if ($FF_EN == 1) {
+	print FILE "\t\tend\n";
+    }
     print FILE "\tend\n\n";
     print FILE "\t//output logic\n";
     print FILE "\tassign crc_out = lfsr_reg;\n\n";
