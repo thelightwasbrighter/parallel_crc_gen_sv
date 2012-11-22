@@ -1,13 +1,13 @@
 #!/usr/bin/perl
 
-$DATA_WIDTH = 4;
-$CRC_WIDTH = 5;
-$GENERATOR = 5;
+$DATA_WIDTH = 400;
+$CRC_WIDTH = 32;
+$GENERATOR = 3988292384;
 $FF_EN = 1;
 
 $DATA_WIDTH_DEC = $DATA_WIDTH - 1;
 $CRC_WIDTH_DEC = $CRC_WIDTH - 1;
-sub crcSerial { 
+sub crcSerial {
 #in: @crc_serial_array_in, $crc_serial_data_in
 #out:@crc_serial_array_out
     $generator_temp = $GENERATOR;
@@ -30,7 +30,7 @@ sub crcSerial {
 sub crcParallel {
 #in: @crc_parallel_array_in, @crc_parallel_data_vect_in
 #out:@crc_parallel_array_out
-    @crc_parallel_array_out = @crc_parallel_array_in;    
+    @crc_parallel_array_out = @crc_parallel_array_in;
     for (my $i = 0; $i<$DATA_WIDTH; $i += 1) {
 	@crc_serial_array_in = @crc_parallel_array_out;
 	$crc_serial_data_in = $crc_parallel_data_vect_in[$DATA_WIDTH-1-$i];
@@ -55,7 +55,7 @@ sub crc_calc_h1_matrix {
 	@crc_parallel_array_in = @h1_buffer_array;
 	@crc_parallel_data_vect_in = @h1_data_vect;
 	&crcParallel();
-	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) {   
+	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) {
 	    $h1_mat_out[$j]->[$i] = $crc_parallel_array_out[$j];
 	}
     }
@@ -73,18 +73,18 @@ sub crc_calc_h2_matrix {
 	    }else{
 		$h2_buffer_array[$j]=0;
 	    }
-	}   
+	}
 	@crc_parallel_array_in = @h2_buffer_array;
 	@crc_parallel_data_vect_in = @h2_data_vect;
 	&crcParallel();
-	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) {   
+	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) {
 	    $h2_mat_out[$j]->[$i] = $crc_parallel_array_out[$j];
 	}
     }
 }
 
 sub print_header {
-    print FILE "//This file was generated automatically\n\n";
+    print FILE "//This file was automatically generated\n\n";
     print FILE "module parallel_crc (\n";
     print FILE "\tinput logic clk, reset_n,\n";
     if ($FF_EN==1) {
@@ -93,7 +93,7 @@ sub print_header {
     print FILE "\tinput logic [$DATA_WIDTH_DEC:0] data_in,\n";
     print FILE "\toutput logic [$CRC_WIDTH_DEC:0] crc_out\n";
     print FILE "\t);\n\n";
-    print FILE "\tlogic [CRC_WIDTH_DEC:0] lfsr_reg, lfsr_next;\n\n";
+    print FILE "\tlogic [$CRC_WIDTH_DEC:0] lfsr_reg, lfsr_next;\n\n";
     print FILE "\t//registers\n";
     print FILE "\talways_ff @(posedge clk, negedge reset_n) begin\n";
     print FILE "\t\tif (reset_n==1'b0) begin\n";
@@ -106,19 +106,19 @@ sub print_header {
     print FILE "\talways_comb begin\n";
     if ($FF_EN==1) {
 	print FILE "\t\t//defaults\n";
-	print FILE "\t\t//lfsr_next = lfsr_reg;\n\n";
+	print FILE "\t\tlfsr_next = lfsr_reg;\n\n";
 	print FILE "\t\tif (crc_en==1'b1) begin\n";
     }
 }
 
 sub print_logic {
-    for (my $i = 0; $i<$CRC_WIDTH; $i += 1) { 
+    for (my $i = 0; $i<$CRC_WIDTH; $i += 1) {
 	$first_done = 0;
 	if ($FF_EN==1) {
 	    print FILE "\t";
 	}
 	print FILE "\t\tlfsr_next[$i] =";
-	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) { 
+	for (my $j = 0; $j<$CRC_WIDTH; $j += 1) {
 	    if ($h2_mat_out[$i]->[$j]==1) {
 		if ($first_done==0) {
 		    print FILE " lfsr_reg[$j]";
@@ -128,18 +128,18 @@ sub print_logic {
 		}
 	    }
 	}
-	for (my $j = 0; $j<$DATA_WIDTH; $j += 1) { 
+	for (my $j = 0; $j<$DATA_WIDTH; $j += 1) {
 	    if ($h1_mat_out[$i]->[$j]==1) {
 		if ($first_done==0) {
 		    print FILE " data_in[$j]";
 		    $first_done = 1;
 		}else{
 		    print FILE " ^ data_in[$j]";
-		}   
+		}
 	    }
 	}
 	print FILE ";\n";
-    } 
+    }
 }
 
 sub print_footer {
